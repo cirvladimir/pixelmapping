@@ -52,6 +52,9 @@ int main(int argc, char ** argv) {
     std::shared_ptr<Solver<float> > solver;
     solver.reset(SolverRegistry<float>::CreateSolver(solver_param));
 
+    if (argc > 1)
+        solver->Restore(argv[1]);
+
     Net<float>* net = solver->net().get();
 
     const int BATCH_SIZE = net->input_blobs()[0]->shape(0);
@@ -115,10 +118,10 @@ int main(int argc, char ** argv) {
                 renderRect(WIDTH, HEIGHT, rectW, rectH, randx, randy, rot, imgPtr);
                 renderRect(WIDTH, HEIGHT, rectW, rectH, randx + randdx, randy + randdy, rot + drot, imgPtr + WIDTH * HEIGHT);
 
-                if ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)))
-                    cout << "." << endl;
+                // if ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)))
+                    // cout << "." << endl;
             } while ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
-            cout << "+" << endl;
+            // cout << "+" << endl;
             // cout << movx << " " << movy << endl;
             // drawDat("t1.png", 100, 100, imgPtr, [](float x) { return x == -1 ? 0 : 255; });
             // drawDat("t2.png", 100, 100, imgPtr + 10000, [](float x) { return x == -1 ? 0 : 255; });
