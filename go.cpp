@@ -11,6 +11,8 @@ using namespace std;
 using namespace caffe;
 using namespace cv;
 
+#define RANDDOUBLE ((rand() % RAND_MAX) * 1.0 / RAND_MAX)
+
 void renderRect(int imW, int imH, int rW, int rH, int cx, int cy, float rot, float* data) {
     float bkGround = -1;
     float col = 1;
@@ -86,19 +88,8 @@ int main(int argc, char ** argv) {
             int movy;
             // check that center is 1
             do {
-                // rot = (rand() % 10000) * 1.0 / 10000.0 * M_PI / 2;
-                // randx = rand() % 30 + 35;
-                // randy = rand() % 30 + 35;
-                // randdx = rand() % 11 - 5;
-                // randdy = rand() % 11 - 5;
-                // drot = (rand() % 10000) * 1.0 / 10000.0 * M_PI / 5 - M_PI / 10;
-                // locx = (50 - randx) * cos(rot) - (50 - randy) * sin(rot);
-                // locy = (50 - randx) * sin(rot) + (50 - randy) * cos(rot);
-                // movx = locx * cos(rot + drot) + locy * sin(rot + drot) + randx + randdx - 50;
-                // movy = -locx * sin(rot + drot) + locy * cos(rot + drot) + randy + randdy - 50;
-
-                rot = (rand() % 10000) * 1.0 / 10000.0 * M_PI / 2;
-                drot = 0;//(rand() % 10000) * 1.0 / 10000.0 * M_PI / 5 - M_PI / 10;
+                rot = RANDDOUBLE * M_PI / 2;
+                drot = RANDDOUBLE * M_PI / 9 - M_PI / 18;
                 randx = rand() % 49 + 26;
                 randy = rand() % 49 + 26;
                 randdx = rand() % 11 - 5;
@@ -122,26 +113,9 @@ int main(int argc, char ** argv) {
                 // if ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)))
                     // cout << "." << endl;
             } while ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
-            // cout << "+" << endl;
-            // cout << movx << " " << movy << endl;
-            // drawDat("t1.png", 100, 100, imgPtr, [](float x) { return x == -1 ? 0 : 255; });
-            // drawDat("t2.png", 100, 100, imgPtr + 10000, [](float x) { return x == -1 ? 0 : 255; });
-            // return 0;
 
-            //Mat rm1(100, 100, CV_32F);
-            //Mat rm2(100, 100, CV_32F);
-            //for (int x = 0; x < 100; x++) {
-            //    for (int y = 0; y < 100; y++) {
-            //        rm1.at<float>(x, y) = imgPtr[x + 100 * y] == 1 ? 0 : 255;
-            //        rm2.at<float>(x, y) = imgPtr[x + 100 * y + 100 * 100] == 1 ? 0 : 255;
-            //    }
-            //}
-            //imwrite("test1.png", rm1);
-            //imwrite("test2.png", rm2);
-            //cout << movx << "," << movy << endl;
-            //return 0;
-            labPtr[0] = movx + 5;// + (movy + 5) * 11;
-            labPtr[1] = movy + 5;
+            labPtr[0] = movx + MAX_MOVE;// + (movy + MAX_MOVE) * (MAX_MOVE * 2 + 1);
+            labPtr[1] = movy + MAX_MOVE;
         }
         if (solver->iter() % 100 == 0) {
             float loss;

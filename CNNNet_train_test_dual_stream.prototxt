@@ -800,7 +800,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 11
+    num_output: 21
     weight_filler {
       type: "prelu"
     }
@@ -811,15 +811,20 @@ layer {
   }
 }
 layer {
+  name: "softmax_x"
+  type: "Softmax"
+  bottom: "fc8_x"
+  top: "softmax_x"
+}
+layer {
   name: "pred_x"
   type: "ArgMax"
-  bottom: "fc8_x"
+  bottom: "softmax_x"
   top: "pred_x"
-  phase: TEST
 }
 layer {
   name: "regression_loss_x"
-  type: "SoftmaxWithLoss"
+  type: "SmoothL1Loss"
   bottom: "fc8_x"
   bottom: "label_x"
   top: "regression_loss_x"
@@ -840,7 +845,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 11
+    num_output: 21
     weight_filler {
       type: "prelu"
     }
@@ -851,15 +856,20 @@ layer {
   }
 }
 layer {
+  name: "softmax_y"
+  type: "Softmax"
+  bottom: "fc8_y"
+  top: "softmax_y"
+}
+layer {
   name: "pred_y"
   type: "ArgMax"
-  bottom: "fc8_y"
+  bottom: "softmax_y"
   top: "pred_y"
-  phase: TEST
 }
 layer {
   name: "regression_loss_y"
-  type: "SoftmaxWithLoss"
+  type: "SmoothL1Loss"
   bottom: "fc8_y"
   bottom: "label_y"
   top: "regression_loss_y"
