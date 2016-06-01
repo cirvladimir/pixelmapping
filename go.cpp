@@ -62,7 +62,8 @@ int main(int argc, char ** argv) {
     const int HEIGHT = net->input_blobs()[0]->shape(3);
     const int NUM_LABELS = net->input_blobs()[1]->shape(1);
 
-    const int MAX_MOVE = (int)(sqrt(net->blob_by_name("fc8")->shape(1)) - 1) / 2;
+    // const int MAX_MOVE = (int)(sqrt(net->blob_by_name("fc8")->shape(1)) - 1) / 2;
+    const int MAX_MOVE = (int)(net->blob_by_name("fc8_x")->shape(1) - 1) / 2;
 
     int rectW = 50;
     int rectH = 50;
@@ -97,7 +98,7 @@ int main(int argc, char ** argv) {
                 // movy = -locx * sin(rot + drot) + locy * cos(rot + drot) + randy + randdy - 50;
 
                 rot = (rand() % 10000) * 1.0 / 10000.0 * M_PI / 2;
-                drot = (rand() % 10000) * 1.0 / 10000.0 * M_PI / 5 - M_PI / 10;
+                drot = 0;//(rand() % 10000) * 1.0 / 10000.0 * M_PI / 5 - M_PI / 10;
                 randx = rand() % 49 + 26;
                 randy = rand() % 49 + 26;
                 randdx = rand() % 11 - 5;
@@ -139,7 +140,8 @@ int main(int argc, char ** argv) {
             //imwrite("test2.png", rm2);
             //cout << movx << "," << movy << endl;
             //return 0;
-            labPtr[0] = movx + 5 + (movy + 5) * 11;
+            labPtr[0] = movx + 5;// + (movy + 5) * 11;
+            labPtr[1] = movy + 5;
         }
         if (solver->iter() % 100 == 0) {
             float loss;

@@ -2,14 +2,14 @@
 name: "RGBNet"
 # Image Data Layers
 input: "image_data"
-input_dim: 48
+input_dim: 148
 input_dim: 2
 input_dim: 100
 input_dim: 100
 
 input: "raw_label_pose"
-input_dim: 48
-input_dim: 1
+input_dim: 148
+input_dim: 2
 input_dim: 1
 input_dim: 1
 
@@ -773,11 +773,24 @@ layer {
     }
   }
 }
+
 layer {
-  name: "fc8"
+  name: "label_slice"
+  type: "Slice"
+  bottom: "raw_label_pose"
+  top: "label_x"
+  top: "label_y"
+  slice_param {
+    slice_dim: 1
+    slice_point: 1
+  }
+}
+
+layer {
+  name: "fc8_x"
   type: "InnerProduct"
   bottom: "fc7"
-  top: "fc8"
+  top: "fc8_x"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -787,7 +800,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 441
+    num_output: 11
     weight_filler {
       type: "prelu"
     }
@@ -798,10 +811,57 @@ layer {
   }
 }
 layer {
-  name: "regression_loss"
+  name: "pred_x"
+  type: "ArgMax"
+  bottom: "fc8_x"
+  top: "pred_x"
+  phase: TEST
+}
+layer {
+  name: "regression_loss_x"
   type: "SoftmaxWithLoss"
-  bottom: "fc8"
-  bottom: "raw_label_pose"
-  top: "regression_loss"
+  bottom: "fc8_x"
+  bottom: "label_x"
+  top: "regression_loss_x"
+  loss_weight: 1
+}
+
+layer {
+  name: "fc8_y"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_y"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 11
+    weight_filler {
+      type: "prelu"
+    }
+    bias_filler {
+      type: "constant"
+      value: 1.0
+    }
+  }
+}
+layer {
+  name: "pred_y"
+  type: "ArgMax"
+  bottom: "fc8_y"
+  top: "pred_y"
+  phase: TEST
+}
+layer {
+  name: "regression_loss_y"
+  type: "SoftmaxWithLoss"
+  bottom: "fc8_y"
+  bottom: "label_y"
+  top: "regression_loss_y"
   loss_weight: 1
 }
