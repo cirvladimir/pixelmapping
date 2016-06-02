@@ -114,13 +114,13 @@ int main(int argc, char ** argv) {
                     // cout << "." << endl;
             } while ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
 
-            for (int i = 0; i < NUM_LABELS / 2; i++) {
-                int lab = i - MAX_MOVE;
-                labPtr[i] = exp(-(lab - movx) * (lab - movx) / 3.0);
-                labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / 3.0);
-            }
-            // labPtr[0] = movx + MAX_MOVE;
-            // labPtr[1] = movy + MAX_MOVE;
+            // for (int i = 0; i < NUM_LABELS / 2; i++) {
+            //     int lab = i - MAX_MOVE;
+            //     labPtr[i] = exp(-(lab - movx) * (lab - movx) / 3.0);
+            //     labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / 3.0);
+            // }
+            labPtr[0] = movx + MAX_MOVE;
+            labPtr[1] = movy + MAX_MOVE;
         }
         if (solver->iter() % 100 == 0) {
             float loss;
@@ -129,6 +129,9 @@ int main(int argc, char ** argv) {
         }
         if (solver->iter() % 1000 == 0) {
             solver->Snapshot();
+        }
+        if (solver->iter() > 50000) {
+            return 0;
         }
 
         solver->Step(1);
