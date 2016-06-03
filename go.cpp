@@ -4,27 +4,37 @@
 #include <caffe/caffe.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
 #include <math.h>
 #include <functional>
+#include <chrono>
 
 using namespace std;
 using namespace caffe;
 using namespace cv;
 
 #define RANDDOUBLE ((rand() % RAND_MAX) * 1.0 / RAND_MAX)
+#define BK_GROUND -1.0f
+#define FR_GROUND 1.0f
 
 void renderRect(int imW, int imH, int rW, int rH, int cx, int cy, float rot, float* data) {
-    float bkGround = -1;
-    float col = 1;
     float c = cos(rot);
     float s = sin(rot);
     for (int y = 0; y < imH; y++) {
         for (int x = 0; x < imW; x++) {
             int locx = (x - cx) * c - (y - cy) * s;
             int locy = (x - cx) * s + (y - cy) * c;
-            data[x + imW * y] = (-rW / 2 < locx) && (locx < rW / 2) && (-rH / 2 < locy) && (locy < rH / 2) ? col : bkGround;
+            data[x + imW * y] = (-rW / 2 < locx) && (locx < rW / 2) && (-rH / 2 < locy) && (locy < rH / 2) ? FR_GROUND : BK_GROUND;
         }
     }
+}
+
+void renderImage(int imW, int imH, int cx, int cy, float rot, float* data, const Mat& img) {
+    warpAffine(img, Mat(imH, imW, CV_32F, data),
+        (Mat_<float>(2, 3) << 1, 0, cx, 0, 1, cy) * // translate to desired location
+        (Mat_<float>(3, 3) << cos(rot), -sin(rot), 0, sin(rot), cos(rot), 0, 0, 0, 1) * // rotate
+        (Mat_<float>(3, 3) << 1, 0, -img.rows / 2, 0, 1, -img.cols / 2, 0, 0, 1), // center
+        Size(imH, imW), INTER_LINEAR, BORDER_CONSTANT, Scalar(BK_GROUND));
 }
 
 void drawDat(const char* fname, int w, int h, float* dat, function<float(float)> f) {
@@ -42,6 +52,17 @@ int main(int argc, char ** argv) {
     // renderRect(100, 100, 30, 30, 70, 50, 0.4, (float*)rm.data);
     // imwrite("test.png", rm);
     // return 0;
+    Mat characterImg = imread("../character.png", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat character(50, 50, CV_32F);
+    for (int j = 0; j < characterImg.cols; j++) {
+        for (int i = 0; i < characterImg.rows; i++) {
+            character.at<float>(i, j) = characterImg.at<unsigned char>(i, j) / -255.0 * (FR_GROUND - BK_GROUND) + FR_GROUND;
+        }
+    }
+
+    // float* a = (float*)malloc(40000);
+    // renderImage(100, 100, 20, 20, M_PI / 2, a, character);
+    // drawDat("test.png", 100, 100, a, [](float x) { return x * 127 + 128; });return 0;
 
     srand(time(0));
     ::google::InitGoogleLogging(argv[0]);
@@ -65,10 +86,14 @@ int main(int argc, char ** argv) {
     const int NUM_LABELS = net->input_blobs()[1]->shape(1);
 
     // const int MAX_MOVE = (int)(sqrt(net->blob_by_name("fc8")->shape(1)) - 1) / 2;
-    const int MAX_MOVE = (int)(net->blob_by_name("fc8_x")->shape(1) - 1) / 2;
+    const int MAX_MOVE = 10;
+    cout << "Learning params: MAX_MOVE: " << MAX_MOVE << ", NUM_LABELS: " << NUM_LABELS << endl;
 
     int rectW = 50;
     int rectH = 50;
+
+    // auto start = std::chrono::system_clock::now();
+    // std::chrono::duration<double> totWasted(0);
 
     while (true) {
         for (int i = 0; i < BATCH_SIZE; i++) {
@@ -87,8 +112,11 @@ int main(int argc, char ** argv) {
             int movx;
             int movy;
             // check that center is 1
+            // auto startC = std::chrono::system_clock::now();
+            // int numTries = 0;
             do {
-                rot = RANDDOUBLE * M_PI / 2;
+                // numTries++;
+                rot = RANDDOUBLE * M_PI * 2;
                 drot = RANDDOUBLE * M_PI / 9 - M_PI / 18;
                 randx = rand() % 49 + 26;
                 randy = rand() % 49 + 26;
@@ -99,20 +127,24 @@ int main(int argc, char ** argv) {
                 float s = sin(rot);
                 float cp = cos(rot + drot);
                 float sp = sin(rot + drot);
-                float locx = (50 - randx) * c - (50 - randy) * s;
-                float locy = (50 - randx) * s + (50 - randy) * c;
+                locx = (50 - randx) * c + (50 - randy) * s;
+                locy = -(50 - randx) * s + (50 - randy) * c;
 
-                int actx = (locx * cp + locy * sp) + (randx + randdx);
-                int acty = (-locx * sp + locy * cp) + (randy + randdy);
+                int actx = (locx * cp - locy * sp) + (randx + randdx);
+                int acty = (locx * sp + locy * cp) + (randy + randdy);
                 movx = actx - 50;
                 movy = acty - 50;
 
-                renderRect(WIDTH, HEIGHT, rectW, rectH, randx, randy, rot, imgPtr);
-                renderRect(WIDTH, HEIGHT, rectW, rectH, randx + randdx, randy + randdy, rot + drot, imgPtr + WIDTH * HEIGHT);
+                renderImage(WIDTH, HEIGHT, randx, randy, rot, imgPtr, character);
+                renderImage(WIDTH, HEIGHT, randx + randdx, randy + randdy, rot + drot, imgPtr + WIDTH * HEIGHT, character);
 
-                // if ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)))
-                    // cout << "." << endl;
-            } while ((imgPtr[WIDTH / 2 + WIDTH * (HEIGHT / 2)] != 1) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
+                // renderRect(WIDTH, HEIGHT, rectW, rectH, randx, randy, rot, imgPtr);
+                // renderRect(WIDTH, HEIGHT, rectW, rectH, randx + randdx, randy + randdy, rot + drot, imgPtr + WIDTH * HEIGHT);
+
+                // if ((imgPtr[HEIGHT / 2 * WIDTH + WIDTH / 2] == BK_GROUND) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)))
+                //     cout << "." << endl;
+            } while ((imgPtr[HEIGHT / 2 * WIDTH + WIDTH / 2] == BK_GROUND) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
+            // totWasted += (std::chrono::system_clock::now() - startC) * (numTries - 1) / numTries;
 
             // for (int i = 0; i < NUM_LABELS / 2; i++) {
             //     int lab = i - MAX_MOVE;
@@ -122,6 +154,7 @@ int main(int argc, char ** argv) {
             labPtr[0] = movx + MAX_MOVE;
             labPtr[1] = movy + MAX_MOVE;
         }
+        // cout << "Total wasted time: " << totWasted.count() << "s of " << std::chrono::duration<double>(std::chrono::system_clock::now() - start).count() << "s" << endl;
         if (solver->iter() % 100 == 0) {
             float loss;
             net->Forward(&loss);
