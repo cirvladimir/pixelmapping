@@ -9,7 +9,7 @@ input_dim: 100
 
 input: "raw_label_pose"
 input_dim: 48
-input_dim: 42
+input_dim: 121
 input_dim: 1
 input_dim: 1
 
@@ -775,105 +775,40 @@ layer {
 }
 
 layer {
-  name: "label_slice"
-  type: "Slice"
+  name: "fc8"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 121
+    weight_filler {
+      type: "prelu"
+    }
+    bias_filler {
+      type: "constant"
+      value: 1.0
+    }
+  }
+}
+layer {
+  name: "softmax"
+  type: "Softmax"
+  bottom: "fc8"
+  top: "softmax"
+}
+layer {
+  name: "regression_loss"
+  type: "SmoothL1Loss"
+  bottom: "softmax"
   bottom: "raw_label_pose"
-  top: "label_x"
-  top: "label_y"
-  slice_param {
-    slice_dim: 1
-    slice_point: 21
-  }
-}
-
-layer {
-  name: "fc8_x"
-  type: "InnerProduct"
-  bottom: "fc7"
-  top: "fc8_x"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  inner_product_param {
-    num_output: 21
-    weight_filler {
-      type: "prelu"
-    }
-    bias_filler {
-      type: "constant"
-      value: 1.0
-    }
-  }
-}
-layer {
-  name: "softmax_x"
-  type: "Softmax"
-  bottom: "fc8_x"
-  top: "softmax_x"
-}
-layer {
-  name: "pred_x"
-  type: "ArgMax"
-  bottom: "softmax_x"
-  top: "pred_x"
-  phase: TEST
-}
-layer {
-  name: "regression_loss_x"
-  type: "SmoothL1Loss"
-  bottom: "softmax_x"
-  bottom: "label_x"
-  top: "regression_loss_x"
-  loss_weight: 1
-}
-
-layer {
-  name: "fc8_y"
-  type: "InnerProduct"
-  bottom: "fc7"
-  top: "fc8_y"
-  param {
-    lr_mult: 1
-    decay_mult: 1
-  }
-  param {
-    lr_mult: 2
-    decay_mult: 0
-  }
-  inner_product_param {
-    num_output: 21
-    weight_filler {
-      type: "prelu"
-    }
-    bias_filler {
-      type: "constant"
-      value: 1.0
-    }
-  }
-}
-layer {
-  name: "softmax_y"
-  type: "Softmax"
-  bottom: "fc8_y"
-  top: "softmax_y"
-}
-layer {
-  name: "pred_y"
-  type: "ArgMax"
-  bottom: "softmax_y"
-  top: "pred_y"
-  phase: TEST
-}
-layer {
-  name: "regression_loss_y"
-  type: "SmoothL1Loss"
-  bottom: "softmax_y"
-  bottom: "label_y"
-  top: "regression_loss_y"
+  top: "regression_loss"
   loss_weight: 1
 }

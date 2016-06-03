@@ -85,7 +85,7 @@ int main(int argc, char ** argv) {
     const int HEIGHT = net->input_blobs()[0]->shape(3);
     const int NUM_LABELS = net->input_blobs()[1]->shape(1);
 
-    const int MAX_MOVE = ((NUM_LABELS / 2) - 1) / 2;
+    const int MAX_MOVE = 5;//((NUM_LABELS / 2) - 1) / 2;
     cout << "Learning params: MAX_MOVE: " << MAX_MOVE << ", NUM_LABELS: " << NUM_LABELS << endl;
 
     int rectW = 50;
@@ -150,10 +150,10 @@ int main(int argc, char ** argv) {
             // imgPtr[5050 + 10000 + movx + movy * 100] = -3;
             // drawDat("test1.png", 100, 100, imgPtr, [](float x) { return x * 64 + 128 + 63; });
             // drawDat("test2.png", 100, 100, imgPtr + 10000, [](float x) { return x * 64 + 128 + 63; });return 0;
-            for (int i = 0; i < NUM_LABELS / 2; i++) {
-                int lab = i - MAX_MOVE;
-                labPtr[i] = exp(-(lab - movx) * (lab - movx) / 3.0);
-                labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / 3.0);
+            for (int i = 0; i < NUM_LABELS; i++) {
+                int px = i % 11 - 5;
+                int py = i / 11 - 5;
+                labPtr[i] = exp(-((px - movx) * (px - movx) + (py - movy) * (py - movy)) / 3.0);
             }
             // labPtr[0] = movx + MAX_MOVE;
             // labPtr[1] = movy + MAX_MOVE;
