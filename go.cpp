@@ -85,8 +85,7 @@ int main(int argc, char ** argv) {
     const int HEIGHT = net->input_blobs()[0]->shape(3);
     const int NUM_LABELS = net->input_blobs()[1]->shape(1);
 
-    // const int MAX_MOVE = (int)(sqrt(net->blob_by_name("fc8")->shape(1)) - 1) / 2;
-    const int MAX_MOVE = 10;
+    const int MAX_MOVE = ((NUM_LABELS / 2) - 1) / 2;
     cout << "Learning params: MAX_MOVE: " << MAX_MOVE << ", NUM_LABELS: " << NUM_LABELS << endl;
 
     int rectW = 50;
@@ -146,13 +145,18 @@ int main(int argc, char ** argv) {
             } while ((imgPtr[HEIGHT / 2 * WIDTH + WIDTH / 2] == BK_GROUND) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
             // totWasted += (std::chrono::system_clock::now() - startC) * (numTries - 1) / numTries;
 
-            // for (int i = 0; i < NUM_LABELS / 2; i++) {
-            //     int lab = i - MAX_MOVE;
-            //     labPtr[i] = exp(-(lab - movx) * (lab - movx) / 3.0);
-            //     labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / 3.0);
-            // }
-            labPtr[0] = movx + MAX_MOVE;
-            labPtr[1] = movy + MAX_MOVE;
+            // cout << movx << " " << movy << endl;
+            // imgPtr[5050] = -3;
+            // imgPtr[5050 + 10000 + movx + movy * 100] = -3;
+            // drawDat("test1.png", 100, 100, imgPtr, [](float x) { return x * 64 + 128 + 63; });
+            // drawDat("test2.png", 100, 100, imgPtr + 10000, [](float x) { return x * 64 + 128 + 63; });return 0;
+            for (int i = 0; i < NUM_LABELS / 2; i++) {
+                int lab = i - MAX_MOVE;
+                labPtr[i] = exp(-(lab - movx) * (lab - movx) / 3.0);
+                labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / 3.0);
+            }
+            // labPtr[0] = movx + MAX_MOVE;
+            // labPtr[1] = movy + MAX_MOVE;
         }
         // cout << "Total wasted time: " << totWasted.count() << "s of " << std::chrono::duration<double>(std::chrono::system_clock::now() - start).count() << "s" << endl;
         if (solver->iter() % 100 == 0) {
@@ -160,10 +164,10 @@ int main(int argc, char ** argv) {
             net->Forward(&loss);
             cout << "loss at " << solver->iter() << ": " << loss << endl;
         }
-        if (solver->iter() % 1000 == 0) {
+        if ((solver->iter() % 1000 == 0) && (solver->iter() > 0)) {
             solver->Snapshot();
         }
-        if (solver->iter() > 50000) {
+        if (solver->iter() > 25000) {
             return 0;
         }
 
