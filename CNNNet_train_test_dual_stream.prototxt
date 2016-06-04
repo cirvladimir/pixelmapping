@@ -9,7 +9,7 @@ input_dim: 100
 
 input: "raw_label_pose"
 input_dim: 48
-input_dim: 121
+input_dim: 2
 input_dim: 1
 input_dim: 1
 
@@ -775,10 +775,22 @@ layer {
 }
 
 layer {
-  name: "fc8"
+  name: "label_slice"
+  type: "Slice"
+  bottom: "raw_label_pose"
+  top: "label_x"
+  top: "label_y"
+  slice_param {
+    slice_dim: 1
+    slice_point: 1
+  }
+}
+
+layer {
+  name: "fc8_x"
   type: "InnerProduct"
   bottom: "fc7"
-  top: "fc8"
+  top: "fc8_x"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -788,7 +800,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 121
+    num_output: 1
     weight_filler {
       type: "prelu"
     }
@@ -799,16 +811,43 @@ layer {
   }
 }
 layer {
-  name: "softmax"
-  type: "Softmax"
-  bottom: "fc8"
-  top: "softmax"
+  name: "regression_loss_x"
+  type: "SmoothL1Loss"
+  bottom: "fc8_x"
+  bottom: "label_x"
+  top: "regression_loss_x"
+  loss_weight: 1
+}
+
+layer {
+  name: "fc8_y"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_y"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "prelu"
+    }
+    bias_filler {
+      type: "constant"
+      value: 1.0
+    }
+  }
 }
 layer {
-  name: "regression_loss"
+  name: "regression_loss_y"
   type: "SmoothL1Loss"
-  bottom: "softmax"
-  bottom: "raw_label_pose"
-  top: "regression_loss"
+  bottom: "fc8_y"
+  bottom: "label_y"
+  top: "regression_loss_y"
   loss_weight: 1
 }
