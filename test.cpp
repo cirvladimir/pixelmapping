@@ -86,7 +86,7 @@ int main(int argc, char ** argv) {
     int randy = rand() % 30 + 35;
     int randdx = rand() % 11 - 5;
     int randdy = rand() % 11 - 5;
-    float drot = 0;//RANDDOUBLE * M_PI / 5 - M_PI / 10;
+    float drot = 0;//RANDDOUBLE * M_PI / 9 - M_PI / 18;
     float c = cos(rot);
     float s = sin(rot);
     float cp = cos(rot + drot);
@@ -142,8 +142,8 @@ int main(int argc, char ** argv) {
             loadedNums.push_back(make_pair(x, y));
             gtGuess.push_back(make_pair(movx, movy));
 
-            net->input_blobs()[1]->mutable_cpu_data()[2 * i] = movx;
-            net->input_blobs()[1]->mutable_cpu_data()[2 * i + 1] = movy;
+            // net->input_blobs()[1]->mutable_cpu_data()[2 * i] = movx;
+            // net->input_blobs()[1]->mutable_cpu_data()[2 * i + 1] = movy;
             float* curData = net->input_blobs()[0]->mutable_cpu_data() + 100 * 100 * 2 * i;
             for (int pry = 0; pry < 100; pry++) {
                 for (int prx = 0; prx < 100; prx++) {
@@ -166,11 +166,11 @@ int main(int argc, char ** argv) {
         float loss;
         net->Forward(&loss);
         // cout << "loss: " << loss << endl;
-        const float* guesses_x = net->blob_by_name("fc8_x")->cpu_data();
-        const float* guesses_y = net->blob_by_name("fc8_y")->cpu_data();
+        const float* guesses_x = net->blob_by_name("pred_x")->cpu_data();
+        const float* guesses_y = net->blob_by_name("pred_y")->cpu_data();
         for (int i = 0; i < loadedNums.size(); i++) {
-            int guessx = guesses_x[0];
-            int guessy = guesses_y[0];
+            int guessx = guesses_x[0] - 10;
+            int guessy = guesses_y[0] - 10;
             totGuesses++;
             if ((abs(guessx - gtGuess[i].first) <= 1) && (abs(guessy - gtGuess[i].second) <= 1))
                 totCorrect++;
