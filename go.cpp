@@ -60,6 +60,8 @@ int main(int argc, char ** argv) {
         }
     }
 
+    float gausSigma = stof(argv[1]);
+
     // float* a = (float*)malloc(40000);
     // renderImage(100, 100, 20, 20, M_PI / 2, a, character);
     // drawDat("test.png", 100, 100, a, [](float x) { return x * 127 + 128; });return 0;
@@ -68,6 +70,9 @@ int main(int argc, char ** argv) {
     ::google::InitGoogleLogging(argv[0]);
 
     Caffe::set_mode(Caffe::GPU);
+    if (argc > 2) {
+        Caffe::SetDevice(stoi(argv[2]));
+    }
 
     SolverParameter solver_param;
     ReadSolverParamsFromTextFileOrDie("../lenet_solver.prototxt", &solver_param);
@@ -75,8 +80,8 @@ int main(int argc, char ** argv) {
     std::shared_ptr<Solver<float> > solver;
     solver.reset(SolverRegistry<float>::CreateSolver(solver_param));
 
-    if (argc > 1)
-        solver->Restore(argv[1]);
+    if (argc > 3)
+        solver->Restore(argv[3]);
 
     Net<float>* net = solver->net().get();
 
@@ -85,7 +90,7 @@ int main(int argc, char ** argv) {
     const int HEIGHT = net->input_blobs()[0]->shape(3);
     const int NUM_LABELS = net->input_blobs()[1]->shape(1);
 
-    const int MAX_MOVE = 5;//((NUM_LABELS / 2) - 1) / 2;
+    const int MAX_MOVE = 10;//((NUM_LABELS / 2) - 1) / 2;
     cout << "Learning params: MAX_MOVE: " << MAX_MOVE << ", NUM_LABELS: " << NUM_LABELS << endl;
 
     int rectW = 50;
@@ -145,16 +150,21 @@ int main(int argc, char ** argv) {
             } while ((imgPtr[HEIGHT / 2 * WIDTH + WIDTH / 2] == BK_GROUND) || ((movx > MAX_MOVE) || (movx < -MAX_MOVE) || (movy > MAX_MOVE) || (movy < -MAX_MOVE)));
             // totWasted += (std::chrono::system_clock::now() - startC) * (numTries - 1) / numTries;
 
-            // cout << movx << " " << movy << endl;
-            // imgPtr[5050] = -3;
-            // imgPtr[5050 + 10000 + movx + movy * 100] = -3;
-            // drawDat("test1.png", 100, 100, imgPtr, [](float x) { return x * 64 + 128 + 63; });
-            // drawDat("test2.png", 100, 100, imgPtr + 10000, [](float x) { return x * 64 + 128 + 63; });return 0;
-            for (int i = 0; i < NUM_LABELS; i++) {
-                int px = i % 11 - 5;
-                int py = i / 11 - 5;
-                labPtr[i] = exp(-((px - movx) * (px - movx) + (py - movy) * (py - movy)) / 3.0);
+            // Learning independent distributed:
+            for (int i = 0; i < NUM_LABELS / 2; i++) {
+                int lab = i - MAX_MOVE;
+                labPtr[i] = exp(-(lab - movx) * (lab - movx) / gausSigma);
+                labPtr[i + NUM_LABELS / 2] = exp(-(lab - movy) * (lab - movy) / gausSigma);
             }
+
+            // Learning square distributed
+            // for (int i = 0; i < NUM_LABELS; i++) {
+            //     int px = i % 11 - 5;
+            //     int py = i / 11 - 5;
+            //     labPtr[i] = exp(-((px - movx) * (px - movx) + (py - movy) * (py - movy)) / 3.0);
+            // }
+
+            // regression
             // labPtr[0] = movx + MAX_MOVE;
             // labPtr[1] = movy + MAX_MOVE;
         }
@@ -167,7 +177,7 @@ int main(int argc, char ** argv) {
         if ((solver->iter() % 1000 == 0) && (solver->iter() > 0)) {
             solver->Snapshot();
         }
-        if (solver->iter() > 25000) {
+        if (solver->iter() >= 8000) {
             return 0;
         }
 

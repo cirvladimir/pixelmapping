@@ -2,13 +2,13 @@
 name: "RGBNet"
 # Image Data Layers
 input: "image_data"
-input_dim: 48
+input_dim: 100
 input_dim: 2
 input_dim: 100
 input_dim: 100
 
 input: "raw_label_pose"
-input_dim: 48
+input_dim: 100
 input_dim: 42
 input_dim: 1
 input_dim: 1
@@ -811,22 +811,16 @@ layer {
   }
 }
 layer {
-  name: "softmax_x"
-  type: "Softmax"
-  bottom: "fc8_x"
-  top: "softmax_x"
-}
-layer {
   name: "pred_x"
   type: "ArgMax"
-  bottom: "softmax_x"
+  bottom: "fc8_x"
   top: "pred_x"
   phase: TEST
 }
 layer {
   name: "regression_loss_x"
   type: "SmoothL1Loss"
-  bottom: "softmax_x"
+  bottom: "fc8_x"
   bottom: "label_x"
   top: "regression_loss_x"
   loss_weight: 1
@@ -857,22 +851,16 @@ layer {
   }
 }
 layer {
-  name: "softmax_y"
-  type: "Softmax"
-  bottom: "fc8_y"
-  top: "softmax_y"
-}
-layer {
   name: "pred_y"
   type: "ArgMax"
-  bottom: "softmax_y"
+  bottom: "fc8_y"
   top: "pred_y"
   phase: TEST
 }
 layer {
   name: "regression_loss_y"
   type: "SmoothL1Loss"
-  bottom: "softmax_y"
+  bottom: "fc8_y"
   bottom: "label_y"
   top: "regression_loss_y"
   loss_weight: 1
