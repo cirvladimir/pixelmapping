@@ -7,6 +7,8 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <math.h>
 
+#include "libhand_renderer.h"
+
 using namespace std;
 using namespace caffe;
 using namespace cv;
@@ -86,14 +88,38 @@ int main(int argc, char ** argv) {
     int randy = rand() % 30 + 35;
     int randdx = rand() % 11 - 5;
     int randdy = rand() % 11 - 5;
-    float drot = 0;//RANDDOUBLE * M_PI / 9 - M_PI / 18;
+    float drot = RANDDOUBLE * M_PI / 9 - M_PI / 18;
     float c = cos(rot);
     float s = sin(rot);
     float cp = cos(rot + drot);
     float sp = sin(rot + drot);
 
-    renderImage(100, 100, randx, randy, rot, img1Ptr, character);
-    renderImage(100, 100, randx + randdx, randy + randdy, rot + drot, img2Ptr, character);
+
+    int r0_0 = rand() % 40,
+        r0_1 = rand() % 40,
+        r0_2 = rand() % 40;
+    int r1_0 = r0_0 ,
+        r1_1 = r0_1 ,
+        r1_2 = r0_2 ;
+    switch (rand() % 3) {
+        case 0:
+            r1_0 = POSMOD(r1_0 + (rand() % 2) * 2 - 1, 40);
+            break;
+        case 1:
+            r1_1 = POSMOD(r1_1 + (rand() % 2) * 2 - 1, 40);
+            break;
+        case 2:
+            r1_2 = POSMOD(r1_2 + (rand() % 2) * 2 - 1, 40);
+            break;
+    }
+    int img0Ind = r0_0 + r0_1 * 40 + r0_2 * 40 * 40;
+    int img1Ind = r1_0 + r1_1 * 40 + r1_2 * 40 * 40;
+    Mat img0Depth = getDepthImg(img0Ind);
+    Mat img0Color = getVmapImg(img0Ind);
+    Mat img1Depth = getDepthImg(img1Ind);
+    Mat img1Color = getVmapImg(img1Ind);
+    // renderImage(100, 100, randx, randy, rot, img1Ptr, character);
+    // renderImage(100, 100, randx + randdx, randy + randdy, rot + drot, img2Ptr, character);
     // renderRect(WIDTH, HEIGHT, rectW, rectH, randx, randy, rot, img1Ptr);
     // renderRect(WIDTH, HEIGHT, rectW, rectH, randx + randdx, randy + randdy, rot + drot, img2Ptr);
 
@@ -115,7 +141,7 @@ int main(int argc, char ** argv) {
         for (int i = 0; i < BATCH_SIZE; i++) {
             int x = curI / 100;
             int y = curI % 100;
-            while (img1Ptr[x + y * 100] == -1) {
+            while (img0Depth.at<unsigned short>(y, x) == 0) {
                 curI++;
                 if (curI == 10000)
                     break;
@@ -128,13 +154,35 @@ int main(int argc, char ** argv) {
             usedColors++;
             src.at<Vec3b>(y, x) = col;
 
-            float locx = (x - randx) * c + (y - randy) * s;
-            float locy = -(x - randx) * s + (y - randy) * c;
 
-            int actx = (locx * cp - locy * sp) + (randx + randdx);
-            int acty = (locx * sp + locy * cp) + (randy + randdy);
+            cv::Vec3s srcCol = img0Color.at<cv::Vec3s>(y, x);
+            float bestDist = -1;
+            std::pair<int, int> bestShift;
+            for (int r = std::max(0, y-10); r < std::min(100, y+11); r++) {
+                for (int c = std::max(0, x-10); c < std::min(100, x+11); c++) {
+                    if (img1Depth.at<unsigned short>(r, c) > 0) {
+                        cv::Vec3s destCol = img1Color.at<cv::Vec3s>(r, c);
+                        float dist = cv::norm(srcCol - destCol);
+                        if ((bestDist == -1) || (dist < bestDist)) {
+                            bestDist = dist;
+                            bestShift = std::make_pair(c - x, r - y);
+                        }
+                    }
+                }
+            }
+
+            int actx = x + bestShift.first;
+            int acty = y + bestShift.second;
             int movx = actx - x;
             int movy = acty - y;
+
+            // float locx = (x - randx) * c + (y - randy) * s;
+            // float locy = -(x - randx) * s + (y - randy) * c;
+
+            // int actx = (locx * cp - locy * sp) + (randx + randdx);
+            // int acty = (locx * sp + locy * cp) + (randy + randdy);
+            // int movx = actx - x;
+            // int movy = acty - y;
 
             act.at<Vec3b>(acty, actx) = col;
 
@@ -153,8 +201,10 @@ int main(int argc, char ** argv) {
                         curData[prx + 100 * pry] = -1;
                         curData[prx + 100 * pry + 100 * 100] = -1;
                     } else {
-                        curData[prx + 100 * pry] = img1Ptr[cx + 100 * cy];
-                        curData[prx + 100 * pry + 100 * 100] = img2Ptr[cx + 100 * cy];
+                        curData[prx + 100 * pry] = img0Depth.at<unsigned short>(cy, cx) * 2.0 / ((1 << 16) - 1) - 1;
+                        curData[prx + 100 * pry + 100 * 100] = img1Depth.at<unsigned short>(cy, cx) * 2.0 / ((1 << 16) - 1) - 1;
+                        // curData[prx + 100 * pry] = img1Ptr[cx + 100 * cy];
+                        // curData[prx + 100 * pry + 100 * 100] = img2Ptr[cx + 100 * cy];
                     }
                 }
             }
@@ -166,11 +216,11 @@ int main(int argc, char ** argv) {
         float loss;
         net->Forward(&loss);
         // cout << "loss: " << loss << endl;
-        const float* guesses_x = net->blob_by_name("pred_x")->cpu_data();
-        const float* guesses_y = net->blob_by_name("pred_y")->cpu_data();
+        const float* guesses_x = net->blob_by_name("fc8_x")->cpu_data();
+        const float* guesses_y = net->blob_by_name("fc8_y")->cpu_data();
         for (int i = 0; i < loadedNums.size(); i++) {
-            int guessx = guesses_x[0] - 10;
-            int guessy = guesses_y[0] - 10;
+            int guessx = guesses_x[0];
+            int guessy = guesses_y[0];
             totGuesses++;
             if ((abs(guessx - gtGuess[i].first) <= 1) && (abs(guessy - gtGuess[i].second) <= 1))
                 totCorrect++;

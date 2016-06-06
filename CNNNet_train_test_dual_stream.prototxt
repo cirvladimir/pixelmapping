@@ -2,14 +2,14 @@
 name: "RGBNet"
 # Image Data Layers
 input: "image_data"
-input_dim: 100
+input_dim: 148
 input_dim: 2
 input_dim: 100
 input_dim: 100
 
 input: "raw_label_pose"
-input_dim: 100
-input_dim: 42
+input_dim: 148
+input_dim: 2
 input_dim: 1
 input_dim: 1
 
@@ -782,7 +782,7 @@ layer {
   top: "label_y"
   slice_param {
     slice_dim: 1
-    slice_point: 21
+    slice_point: 1
   }
 }
 
@@ -800,7 +800,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 21
+    num_output: 1
     weight_filler {
       type: "prelu"
     }
@@ -809,13 +809,6 @@ layer {
       value: 1.0
     }
   }
-}
-layer {
-  name: "pred_x"
-  type: "ArgMax"
-  bottom: "fc8_x"
-  top: "pred_x"
-  phase: TEST
 }
 layer {
   name: "regression_loss_x"
@@ -840,7 +833,7 @@ layer {
     decay_mult: 0
   }
   inner_product_param {
-    num_output: 21
+    num_output: 1
     weight_filler {
       type: "prelu"
     }
@@ -849,13 +842,6 @@ layer {
       value: 1.0
     }
   }
-}
-layer {
-  name: "pred_y"
-  type: "ArgMax"
-  bottom: "fc8_y"
-  top: "pred_y"
-  phase: TEST
 }
 layer {
   name: "regression_loss_y"

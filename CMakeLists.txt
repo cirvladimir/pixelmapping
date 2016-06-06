@@ -11,6 +11,7 @@ add_definitions(-std=c++11)
 find_package(Caffe)
 find_package(OpenCV)
 find_package(Boost COMPONENTS system)
+find_package(Threads REQUIRED)
 include_directories(${Caffe_INCLUDE_DIRS})
 add_executable(go
     go.cpp)
@@ -21,6 +22,7 @@ target_link_libraries(
     "${Caffe_DIR}/lib/libcaffe.so"
     /usr/lib/x86_64-linux-gnu/libglog.so
     ${Boost_SYSTEM_LIBRARY_RELEASE}
+    ${CMAKE_THREAD_LIBS_INIT}
 )
 
 add_executable(test
