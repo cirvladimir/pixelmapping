@@ -97,7 +97,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    // srand(time(0));
+    srand(time(0));
     ::google::InitGoogleLogging(argv[0]);
 
     // float* a = (float*)malloc(40000);

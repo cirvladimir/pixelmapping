@@ -25,7 +25,7 @@ max_iter: 1000000
 
 # snapshot intermediate results
 snapshot: 100000
-snapshot_prefix: "/home/user/data/snapshots_hand_xy/"
+snapshot_prefix: "/home/user/data/snapshots_nyu_hand_xy/"
 
 # solver mode: CPU or GPU
 type: "Adam"
