@@ -112,8 +112,10 @@ int main(int argc, char ** argv) {
             r1_2 = POSMOD(r1_2 + (rand() % 2) * 2 - 1, 40);
             break;
     }
-    int img0Ind = r0_0 + r0_1 * 40 + r0_2 * 40 * 40;
-    int img1Ind = r1_0 + r1_1 * 40 + r1_2 * 40 * 40;
+    // int img0Ind = r0_0 + r0_1 * 40 + r0_2 * 40 * 40;
+    // int img1Ind = r1_0 + r1_1 * 40 + r1_2 * 40 * 40;
+    int img0Ind = stoi(argv[2]);
+    int img1Ind = img0Ind + 1;
     Mat img0Depth = getDepthImg(img0Ind);
     Mat img0Color = getVmapImg(img0Ind);
     Mat img1Depth = getDepthImg(img1Ind);

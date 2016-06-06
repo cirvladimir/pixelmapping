@@ -11,7 +11,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include "opencv2/imgproc/imgproc.hpp"
 
-#define DATA_DIR "/home/user/data/libhand_onepose/"
+#define DATA_DIR "/home/user/data/libhand_train/"
 
 #define POSMOD(x, m) (((x % m) + m) % m)
 
