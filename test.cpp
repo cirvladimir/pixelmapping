@@ -118,8 +118,15 @@ int main(int argc, char ** argv) {
     int img1Ind = img0Ind + 4;
     Mat img0Depth = getDepthImg(img0Ind);
     Mat img0Color = getVmapImg(img0Ind);
+    // offset by a bit
     Mat img1Depth = getDepthImg(img1Ind);
     Mat img1Color = getVmapImg(img1Ind);
+    warpAffine(img1Depth, img1Depth,
+        Mat((Mat_<float>(2, 3) << 1, 0, 0, 0, 1, 0)),
+        Size(100, 100), INTER_LINEAR, BORDER_CONSTANT, Scalar(BK_GROUND));
+    warpAffine(img1Color, img1Color,
+        Mat((Mat_<float>(2, 3) << 1, 0, 2, 0, 1, 1)),
+        Size(100, 100), INTER_LINEAR, BORDER_CONSTANT, Scalar(BK_GROUND));
     // renderImage(100, 100, randx, randy, rot, img1Ptr, character);
     // renderImage(100, 100, randx + randdx, randy + randdy, rot + drot, img2Ptr, character);
     // renderRect(WIDTH, HEIGHT, rectW, rectH, randx, randy, rot, img1Ptr);

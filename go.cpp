@@ -100,6 +100,11 @@ int main(int argc, char ** argv) {
     srand(time(0));
     ::google::InitGoogleLogging(argv[0]);
 
+    // for (int i = 0; i < 72000; i++) {
+    //     getDepthImg(i);
+    //     getVmapImg(i);
+    // }
+
     // float* a = (float*)malloc(40000);
     // float* b = (float*)malloc(40000);
     // pair<int, int> trav = samplePoses(a, b);
